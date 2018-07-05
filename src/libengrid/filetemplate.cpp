@@ -117,11 +117,11 @@ int FileTemplate::open( QString filename, QString section )
   QTextStream text_stream( &file );
   m_InText = text_stream.readAll();
   file.close();
-  
+
   processTemplate();
-  
+
   this->getValuesFromEgc();
-  
+
   return( 0 );
 }
 
@@ -200,7 +200,7 @@ QString FileTemplate::getContents()
 void FileTemplate::getValuesFromEgc()
 {
   QString contents = GuiMainWindow::pointer()->getXmlSection( m_Section );
-  
+
   QStringList L = contents.split( ";" );
   for ( int i = 0; i < L.size() - 1; i++ ) {
     QStringList L_pair = L[i].split( "=" );

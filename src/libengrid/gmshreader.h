@@ -21,6 +21,10 @@
 #ifndef gmshreader_H
 #define gmshreader_H
 
+
+#include <QMap>
+#include "boundarycondition.h"
+
 class GmshReader;
 
 #include "gmshiooperation.h"
@@ -31,18 +35,19 @@ class GmshReader;
  */
 class GmshReader : public GmshIOOperation
 {
-  
+
   void readAscii1(vtkUnstructuredGrid *grid);
   void readAscii2(vtkUnstructuredGrid *grid);
-  
+  //void readAscii2BND(vtkUnstructuredGrid *grid, QMap<int,BoundaryCondition> myBCMap);
+  QMap<int,BoundaryCondition> readAscii2BND(vtkUnstructuredGrid *grid);
+
 protected: // methods
-  
+
   virtual void operate();
 
 public: // methods
 
   GmshReader() { EG_TYPENAME; }
-  
 };
 
 #endif

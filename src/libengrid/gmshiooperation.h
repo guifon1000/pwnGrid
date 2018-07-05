@@ -27,24 +27,27 @@ class GmshIOOperation;
 
 class GmshIOOperation : public IOOperation
 {
-  
+
 protected: // atributes
-  
-  enum format_t { ascii1, ascii2, bin2 };
+
+  enum format_t { ascii1, ascii2, bin2, ascii2BND };
   format_t format;
-  
+
 public: // methods
-  
+
   /** The constructor sets the file format filter. */
   GmshIOOperation();
-  
+
   /** Set the reader to v1.0 ASCII mode. */
   void setV1Ascii() { format = ascii1; };
-  
+
   /** Set the reader to v2.0 ASCII mode. */
   void setV2Ascii() { format = ascii2; };
-  
-  
+
+  /** Set the reader to v2.0 ASCII mode. with the BOUNDARIES*/
+  void setV2AsciiBND() { format = ascii2BND; };
+
+
 };
 
 #endif

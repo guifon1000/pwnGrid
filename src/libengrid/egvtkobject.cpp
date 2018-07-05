@@ -1060,6 +1060,7 @@ vtkIdType EgVtkObject::findVolumeCell(vtkUnstructuredGrid *grid, vtkIdType id_su
 
 void EgVtkObject::setBoundaryCodes(const QSet<int> &bcs)
 {
+    cout << "setBondaryCodes" << endl;
   m_BoundaryCodes = bcs;
 }
 

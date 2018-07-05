@@ -1,9 +1,8 @@
-//
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // +                                                                      +
 // + This file is part of enGrid.                                         +
 // +                                                                      +
-// + Copyright 2008-2012 enGits GmbH                                     +
+// + Copyright 2008-2014 enGits GmbH                                      +
 // +                                                                      +
 // + enGrid is free software: you can redistribute it and/or modify       +
 // + it under the terms of the GNU General Public License as published by +
@@ -19,7 +18,6 @@
 // + along with enGrid. If not, see <http://www.gnu.org/licenses/>.       +
 // +                                                                      +
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-//
 #include "gridsmoother.h"
 #include "guimainwindow.h"
 #include "elements.h"
@@ -416,7 +414,7 @@ void GridSmoother::relaxNormalVectors()
       if (m_SurfNode[id_node] ) {
         QList<vtkIdType> snap_points;
         for (int i = 0; i < m_Part.n2nGSize(id_node); ++i) {
-          vtkIdType id_neigh = m_Part.n2nGG(id_node,i);
+          vtkIdType id_neigh = m_Part.n2nGG(id_node,i);          
           bool append = true;
           foreach (int bc, n2bc[id_node]) {
             if (!n2bc[id_neigh].contains(bc)) {
@@ -474,209 +472,70 @@ void GridSmoother::getRules()
 
 void GridSmoother::computeDesiredHeights()
 {
-    cout << "  inside - computeDesiredHeights" << endl;
-
-	// ---
-	// find out what the intended surface face size is
-
-	// NOTE: a vector of tuples or a hash table would work much better here
-	vector<vector<double> > targetFaceSizes;
-
-	// retrieve the buffer from the GUI
-	QString buffer = GuiMainWindow::pointer()->getXmlSection("engrid/surface/table").replace("\n", " ");
-	int row_count = 0;
-	int column_count = 0;
-
-	if(!buffer.isEmpty())
-	{
-		QTextStream in(&buffer, QIODevice::ReadOnly);
-		in >> row_count >> column_count;
-		QVector<int> tmp_bcs;
-		GuiMainWindow::pointer()->getAllBoundaryCodes(tmp_bcs);
-		if (column_count == tmp_bcs.size() + 3)
-		{
-			for (int i = 0; i < row_count; ++i)
-			{
-				int row, column;
-				QString formula;
-				foreach (int bc, tmp_bcs) // this yields a warning as bc is unsused
-				{
-					in >> row >> column >> formula;
-				}
-				in >> row >> column >> formula;
-				in >> row >> column >> formula;
-				if (formula == "{{{empty}}}")
-				{
-					formula = "";
-				}
-				in >> row >> column >> formula;
-// cout << "  boundary code " << row+1 << " target face size " << formula.toDouble() << endl;
-
-				// store for future use - first value is boundary code, second is target value
-				std::vector<double> tmpValues(2);
-				tmpValues[0] = row+1;
-				tmpValues[1] = formula.toDouble();
-				targetFaceSizes.push_back(tmpValues);
-			}
-		}
-		else
-		{
-			EG_ERR_RETURN(QObject::tr("Mismatch of number of boundary codes!"));
-		}
-	}
-
-	// ---
-	// map the target surface size from each boundary to each point going by BC
-	// NOTE: neighbour points will be counted twice so just accept whatever value,
-	//		 could also go for a mean but doesn't really matter as this gets smoothed later
-
-	// stores the target surface face size taken from surface mesh rules
-	QVector<double> targetFaceSizeField;
-	targetFaceSizeField.fill(0, m_Grid->GetNumberOfPoints());
-
-	// retrieve BC's of each face
-	EG_VTKDCC(vtkIntArray, bc, m_Grid, "cell_code");
-
-	for (vtkIdType id_cell = 0; id_cell < m_Grid->GetNumberOfCells(); ++id_cell)
-	{
-		if (isSurface(id_cell, m_Grid))
-		{
-
-			vtkIdType N_pts, *pts;
-			m_Grid->GetCellPoints(id_cell, N_pts, pts);
-			for (int i = 0; i < N_pts; ++i)
-			{
-				if (m_SurfNode[pts[i]] && m_BoundaryCodes.contains(bc->GetValue(id_cell)))
-				{
-
-					// find matching boundary code in the storage container grouped by BCs
-					for (size_t j = 0; j < targetFaceSizes.size(); j++)
-					{
-						if (targetFaceSizes[j][0] == bc->GetValue(id_cell))
-						{
-							targetFaceSizeField[pts[i]] = targetFaceSizes[j][1];
-// cout << "  target for point " << pts[i] << " at BC " << targetFaceSizes[j][0] << " size " << targetFaceSizes[j][1]
-//      << " BC value " << bc->GetValue(id_cell) << endl;
-							break;
-						}
-					}
-				}
-			}
-		}
-	}
-
-	// ---
-    // first pass (intial height)
-    EG_VTKDCN(vtkDoubleArray, cl, m_Grid, "node_meshdensity_desired" );
-    m_Height.fill(0, m_Grid->GetNumberOfPoints());
-
-    // compute average extrusion parameters
-    double avHeight(0.);
-    int nFaces(0);
-
-    // id_node - index of surface node
-    // m_SurfNode[id_node] - whether or not to extrude this node or not
-    for (vtkIdType id_node = 0; id_node < m_Grid->GetNumberOfPoints(); ++id_node)
-    {
-        if (m_SurfNode[id_node])
-        {
-            // NOTE replaced the old variant with explicit target size to allow imported
-            // grids to be more easily managed without the need for surface remeshing
-            //m_Height[id_node] = cl->GetValue(id_node);
-            m_Height[id_node] = targetFaceSizeField[id_node];
-// cout << "  setting point " << id_node << " to " << m_Height[id_node] << endl;
-
-            // NOTE this shouldn't happen, if it does, tough luck
-            /*
-            // if undefined: compute height from surrounding edges
-            if (m_Height[id_node] < 1e-99) {
-            m_Height[id_node] = 0;
-            int N = 0;
-            vec3_t x;
-            m_Grid->GetPoint(id_node, x.data());
-            for (int i = 0; i < m_Part.n2nGSize(id_node); ++i) {
-            vtkIdType id_neigh_node = m_Part.n2nGG(id_node, i);
-            if (m_SurfNode[id_neigh_node]) {
+  // first pass (intial height)
+  EG_VTKDCN(vtkDoubleArray, cl, m_Grid, "node_meshdensity_desired" );
+  m_Height.fill(0, m_Grid->GetNumberOfPoints());
+  for (vtkIdType id_node = 0; id_node < m_Grid->GetNumberOfPoints(); ++id_node) {
+    if (m_SurfNode[id_node]) {
+      m_Height[id_node] = cl->GetValue(id_node);
+      // if undefined: compute height from surrounding edges
+      if (m_Height[id_node] < 1e-99) {
+        m_Height[id_node] = 0;
+        int N = 0;
+        vec3_t x;
+        m_Grid->GetPoint(id_node, x.data());
+        for (int i = 0; i < m_Part.n2nGSize(id_node); ++i) {
+          vtkIdType id_neigh_node = m_Part.n2nGG(id_node, i);
+          if (m_SurfNode[id_neigh_node]) {
             ++N;
             vec3_t xn;
             m_Grid->GetPoint(id_neigh_node, xn.data());
             m_Height[id_node] += (x - xn).abs();
-            }
-            }
-            if (N == 0) {
-            EG_BUG;
-            }
-            m_Height[id_node] /= N;
-            }
-            */
-
-            // store statistics
-            avHeight += m_Height[id_node];
-            nFaces++;
+          }
         }
-    }
-
-    // print step summary and reset stat counters
-    cout << "    average desired height after 1st pass " << avHeight/nFaces << endl;
-    avHeight = 0.;
-    nFaces = 0;
-
-    // get height times far field ratio
-    // TODO this is not used anymore
-    // QVector<double> Dh_max = m_Height;
-    // for (vtkIdType id_node = 0; id_node < m_Grid->GetNumberOfPoints(); ++id_node) {
-    //     Dh_max[id_node] *= m_FarRatio;
-    // }
-
-    getRules();
-
-    // second pass (correct with absolute height if required)
-    for (vtkIdType id_node = 0; id_node < m_Grid->GetNumberOfPoints(); ++id_node)
-    {
-        if (m_SurfNode[id_node])
-        {
-            m_Height[id_node] = m_Blending*m_AbsoluteHeight + (1.0-m_Blending)*m_RelativeHeight*m_Height[id_node];
-
-            double h_rule = 1e99;
-            foreach (rule_t rule, m_Rules)
-            {
-                bool apply_rule = true;
-                foreach (int bc, rule.bcs)
-                {
-                    if (!m_Part.hasBC(id_node, bc)) {
-                        apply_rule = false;
-                        break;
-                    }
-                }
-                if (apply_rule) {
-                    h_rule = min(h_rule, rule.h);
-                }
-            }
-            if (h_rule < 1e98) {
-                //m_Height[id_node] = h_rule;
-            }
-
-            // recompute statistics
-            avHeight += m_Height[id_node];
-            nFaces++;
+        if (N == 0) {
+          EG_BUG;
         }
+        m_Height[id_node] /= N;
+      }
     }
+  }
+  QVector<double> Dh_max = m_Height;
+  for (vtkIdType id_node = 0; id_node < m_Grid->GetNumberOfPoints(); ++id_node) {
+    Dh_max[id_node] *= m_FarRatio;
+  }
 
-    // summary and stat reset
-    cout << "    average desired height after 2nd pass " << avHeight/nFaces << endl;
-    avHeight = 0.;
-    nFaces = 0;
+  getRules();
+  // second pass (correct with absolute height if required)
+  for (vtkIdType id_node = 0; id_node < m_Grid->GetNumberOfPoints(); ++id_node) {
+    if (m_SurfNode[id_node]) {
+      m_Height[id_node] = m_Blending*m_AbsoluteHeight + (1.0-m_Blending)*m_RelativeHeight*m_Height[id_node];
+      double h_rule = 1e99;
+      foreach (rule_t rule, m_Rules) {
+        bool apply_rule = true;
+        foreach (int bc, rule.bcs) {
+          if (!m_Part.hasBC(id_node, bc)) {
+            apply_rule = false;
+            break;
+          }
+        }
+        if (apply_rule) {
+          h_rule = min(h_rule, rule.h);
+        }
+      }
+      if (h_rule < 1e98) {
+        //m_Height[id_node] = h_rule;
+      }
+    }
+  }
 
-    // NOTE: This messes with absolute height and seems redundant as only a signle layer
-    // gets extruded to begin with, hence commented out completely
-    m_NumLayers = 1;
-    /*
-    QVector<double> h(m_Grid->GetNumberOfPoints(), 0);
-    QVector<double> h_opt(m_Grid->GetNumberOfPoints(), 0);
-    int num_layers = 0;
-    double err_sq_max = 1e99;
-    m_NumLayers = 0;
-    do {
+
+  QVector<double> h(m_Grid->GetNumberOfPoints(), 0);
+  QVector<double> h_opt(m_Grid->GetNumberOfPoints(), 0);
+  int num_layers = 0;
+  double err_sq_max = 1e99;
+  m_NumLayers = 0;
+  do {
     ++num_layers;
     double err_sq = 0;
     double err_max_iter = 0;
@@ -705,36 +564,26 @@ void GridSmoother::computeDesiredHeights()
       h_opt = h;
       err_sq_max = err_sq;
     }
-    } while (num_layers < 200);
-    m_Height = h_opt;
-    */
+  } while (num_layers < 200);
+  m_Height = h_opt;
 
-    // correct with angle between face normal and propagation direction (node normals)
-    for (vtkIdType id_node = 0; id_node < m_Grid->GetNumberOfPoints(); ++id_node)
-    {
-        if (m_SurfNode[id_node])
-        {
-            int N = 0;
-            double scale = 0;
-            for (int j = 0; j < m_Part.n2cGSize(id_node); ++j)
-            {
-                vtkIdType id_cell = m_Part.n2cGG(id_node, j);
-                if (isSurface(id_cell, m_Grid)) {
-                    scale += m_NodeNormal[id_node]*cellNormal(m_Grid, id_cell).normalise();
-                }
-            }
-            if (N > 0) {
-                scale /= N;
-                m_Height[id_node] /= scale;
-            }
-
-            // more stats
-            avHeight += m_Height[id_node]; // TODO
-            nFaces++;
+  // correct with angle between face normal and propagation direction (node normals)
+  for (vtkIdType id_node = 0; id_node < m_Grid->GetNumberOfPoints(); ++id_node) {
+    if (m_SurfNode[id_node]) {
+      int N = 0;
+      double scale = 0;
+      for (int j = 0; j < m_Part.n2cGSize(id_node); ++j) {
+        vtkIdType id_cell = m_Part.n2cGG(id_node, j);
+        if (isSurface(id_cell, m_Grid)) {
+          scale += m_NodeNormal[id_node]*cellNormal(m_Grid, id_cell).normalise();
         }
+      }
+      if (N > 0) {
+        scale /= N;
+        m_Height[id_node] /= scale;
+      }
     }
-
-    cout << "    average desired height after corr " << avHeight/nFaces << endl;
+  }
 }
 
 bool GridSmoother::faceFine(vtkIdType id_face, double scale)
@@ -765,7 +614,6 @@ bool GridSmoother::faceFine(vtkIdType id_face, double scale)
 
 void GridSmoother::computeHeights()
 {
-cout << "  inside - computeHeights" << endl;
   EG_VTKDCC(vtkIntArray, bc, m_Grid, "cell_code");
 
   {
@@ -858,18 +706,8 @@ cout << "  inside - computeHeights" << endl;
     }
   }
 
-double avHeight(0.);
-int nFaces(0);
-for (vtkIdType id_node = 0; id_node < m_Grid->GetNumberOfPoints(); ++id_node) {
-  if (m_SurfNode[id_node]) {
-  	avHeight += m_Height[id_node];
-  	nFaces++;
-  }
-}
-cout << "    average target height after gap fixes " << avHeight/nFaces << endl;
-
   // limit face size difference (neighbour collisions)
-/*  {
+  {
     bool done;
     do {
       done = true;
@@ -905,17 +743,6 @@ cout << "    average target height after gap fixes " << avHeight/nFaces << endl;
       }
     } while (!done);
   }
-
-avHeight = 0.;
-nFaces = 0;
-for (vtkIdType id_node = 0; id_node < m_Grid->GetNumberOfPoints(); ++id_node) {
-  if (m_SurfNode[id_node]) {
-  	avHeight += m_Height[id_node];
-  	nFaces++;
-  }
-}
-cout << "    average target height after limiting " << avHeight/nFaces << endl;
-*/
 
   // smoothing
   QVector<int> num_bcs(m_Grid->GetNumberOfPoints(),0);
@@ -962,15 +789,6 @@ cout << "    average target height after limiting " << avHeight/nFaces << endl;
     m_Height = h_new;
   }
 
-avHeight = 0.;
-nFaces = 0;
-for (vtkIdType id_node = 0; id_node < m_Grid->GetNumberOfPoints(); ++id_node) {
-  if (m_SurfNode[id_node]) {
-  	avHeight += m_Height[id_node];
-  	nFaces++;
-  }
-}
-cout << "    average target height after smoothing " << avHeight/nFaces << endl;
 
 }
 
@@ -1070,7 +888,6 @@ void GridSmoother::simpleNodeMovement(int i_nodes)
 
 void GridSmoother::operate()
 {
-cout << "inside - operate()" << endl;
   if (m_FirstCall) {
     markNodes();
     computeNormals();
@@ -1088,7 +905,7 @@ cout << "inside - operate()" << endl;
 
 void GridSmoother::writeDebugFile(QString file_name)
 {
-  QVector<vtkIdType> bcells;
+  QVector<vtkIdType> bcells;  
   QSet<int> bcs = getAllBoundaryCodes(m_Grid);
   getSurfaceCells(bcs, bcells, m_Grid);
   MeshPartition bpart(m_Grid);
@@ -1149,3 +966,5 @@ void GridSmoother::writeDebugFile(QString file_name)
     f << m_Height[id_node] << "\n";
   }
 }
+
+

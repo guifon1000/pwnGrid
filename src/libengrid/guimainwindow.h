@@ -95,8 +95,8 @@ class CLASS_LIBENGRID_DLL GuiMainWindow : public QMainWindow, public EgVtkObject
 
     Ui::GuiMainWindow    ui;     ///< The user interface definition -- created by QtDesigner.
     vtkUnstructuredGrid *m_Grid; ///< The current state of the grid that is being generated.
-
     vtkRenderer *m_Renderer; ///< The VTK renderer object, used for visualising the grid
+    QMap<int,BoundaryCondition> *myBCMap ;  //Guillaume
 
     vtkActor* m_SurfaceActor;
     vtkActor* m_TetraActor;
@@ -398,6 +398,7 @@ class CLASS_LIBENGRID_DLL GuiMainWindow : public QMainWindow, public EgVtkObject
     void importGmsh1Ascii();               ///< Import a Gmsh grid from an ASCII file -- using version 1.0 of the Gmsh file format
     void exportGmsh1Ascii();               ///< Export a grid from to an ASCII Gmsh file -- using version 1.0 of the Gmsh file format
     void importGmsh2Ascii();               ///< Import a Gmsh grid from an ASCII file -- using version 2.0 of the Gmsh file format
+    void importGmsh2AsciiWithBND();
     void exportGmsh2Ascii();               ///< Export a grid from to an ASCII Gmsh file -- using version 2.0 of the Gmsh file format
     void exportNeutral();                  ///< Export a grid to neutral format for NETGEN
     void updateActors( bool force = false ); ///< Update the VTK output

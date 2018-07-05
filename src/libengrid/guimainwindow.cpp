@@ -29,6 +29,7 @@
 #include "stlreader.h"
 #include "gmshreader.h"
 #include "gmshwriter.h"
+#include "gmshiooperation.h"
 #include "neutralwriter.h"
 #include "stlwriter.h"
 #include "plywriter.h"
@@ -877,6 +878,22 @@ void GuiMainWindow::importGmsh2Ascii()
   GmshReader gmsh;
   gmsh.setV2Ascii();
   gmsh();
+
+  cout << "zob" << endl;
+  updateBoundaryCodes(true);
+  cout << m_BoundaryCodes << endl;
+  updateActors();
+  cout << m_BoundaryCodes << endl;
+  updateStatusBar();
+  zoomAll();
+}
+
+void GuiMainWindow::importGmsh2AsciiWithBND()
+{
+  GmshReader gmsh;
+  gmsh.setV2AsciiBND();
+  gmsh();
+  cout << "IN GMSH READER WITH BOUNDARIES" << endl; //*myBCMap[key].getName().toStdString() <<
   updateBoundaryCodes(true);
   updateActors();
   updateStatusBar();
@@ -1006,6 +1023,7 @@ void GuiMainWindow::setXmlSection(QString name, QString contents)
 void GuiMainWindow::openPhysicalBoundaryConditions()
 {
   m_PhysicalBoundaryConditionsMap.clear();
+  cout << "pbc map has been cleared" << endl;
   QString buffer = getXmlSection("engrid/physical").trimmed();
   QStringList lines = buffer.split("\n");
   foreach (QString line, lines) {
@@ -1045,6 +1063,7 @@ void GuiMainWindow::savePhysicalBoundaryConditions()
 
 void GuiMainWindow::openBC()
 {
+    cout << "opening BC" << endl;
   m_bcmap.clear();
   m_VolMap.clear();
   QString buffer = getXmlSection("engrid/bc");
@@ -1826,6 +1845,7 @@ void GuiMainWindow::callDeletePickedPoint()
 
 void GuiMainWindow::editBoundaryConditions()
 {
+  cout << "new edit bcs" << endl;
   GuiEditBoundaryConditions editbcs;
   editbcs.setBoundaryCodes(m_AllBoundaryCodes);
   editbcs.setMap(&m_bcmap);

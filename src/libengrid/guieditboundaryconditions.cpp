@@ -27,12 +27,12 @@
 #include "physicalboundarycondition.h"
 #include "multipagewidget.h"
 #include "multipagewidgetpage.h"
-
 #include <QVBoxLayout>
 #include <QFileInfo>
 
 GuiEditBoundaryConditions::GuiEditBoundaryConditions()
 {
+  cout << "initializing boundar condition edit" << endl;
   connect(m_Ui.pushButtonAdd, SIGNAL(clicked()), this, SLOT(addVol()));
   connect(m_Ui.pushButtonDelete, SIGNAL(clicked()), this, SLOT(delVol()));
   connect(m_Ui.pushButtonAddBoundaryType, SIGNAL(clicked()), this, SLOT(addBoundaryType()));
@@ -57,13 +57,31 @@ GuiEditBoundaryConditions::GuiEditBoundaryConditions()
   m_Ui.tabWidget->setCurrentIndex(0);
 }
 
+
+
+
 GuiEditBoundaryConditions::~GuiEditBoundaryConditions()
 {
   delete delegate;
 }
 
+void GuiEditBoundaryConditions::setBcMap(QMap<int,BoundaryCondition> myBCMap2)
+{
+    //m_BcMap = NULL;
+    //foreach(int key, (*m_BcMap).keys()){
+     //cout <<    key << " " << (*m_BcMap)[key].getName().toStdString() << endl;
+     //BoundaryCondition bc = BoundaryCondition(myBCMap2[key].getName(), "patch", -1);
+     //(*m_BcMap)[key] = bc;
+    //}
+updatePhysicalBoundaryConditions();
+
+}
+
+
 void GuiEditBoundaryConditions::before()
 {
+  cout << "in GuiEditBoundaryConditions" << endl;
+
   if (!m_BcMap) EG_BUG;
   resetOrientation(m_Grid);
   while (m_Ui.T->rowCount()) m_Ui.T->removeRow(0);
@@ -91,6 +109,9 @@ void GuiEditBoundaryConditions::before()
   m_Ui.T->setItemDelegate(delegate);
 }
 
+
+
+
 void GuiEditBoundaryConditions::operate()
 {
   // BoundaryCondition and VolumeDefinition
@@ -100,6 +121,7 @@ void GuiEditBoundaryConditions::operate()
     VolumeDefinition V(vol_name, j - 2);
     vols[j] = V;
   }
+  cout << "will set the map!!!!" << endl;
   for (int i = 0; i < m_Ui.T->rowCount(); ++i) {
     int bc = m_Ui.T->item(i, 0)->text().toInt();
     BoundaryCondition BC(m_Ui.T->item(i, 1)->text(), m_Ui.T->item(i, 2)->text(), bc);
@@ -304,14 +326,14 @@ void GuiEditBoundaryConditions::updatePhysicalBoundaryConditions()
 {
   // clear list
   m_Ui.listWidgetBoundaryType->clear();
-  
+
   // fill list
   QList<PhysicalBoundaryCondition> physical_boundary_conditions = GuiMainWindow::pointer()->getAllPhysicalBoundaryConditions();
   foreach(PhysicalBoundaryCondition PBC, physical_boundary_conditions) {
     m_Ui.listWidgetBoundaryType->addItem(PBC.getName());
     m_PhysicalBoundaryConditionsMap[PBC.getName()] = PBC;
   }
-  
+
   // select and load first item
   if (m_Ui.listWidgetBoundaryType->count() > 0) {
     m_Ui.listWidgetBoundaryType->setCurrentRow(0);
@@ -463,7 +485,7 @@ void GuiEditBoundaryConditions::stringToTable(QString hostfile_txt)
 {
   QVector <QString> host;
   QVector <QString> weight;
-  
+
   QStringList host_weight_list = hostfile_txt.split(",");
   foreach(QString host_weight, host_weight_list) {
     if(!host_weight.isEmpty()){
@@ -473,11 +495,11 @@ void GuiEditBoundaryConditions::stringToTable(QString hostfile_txt)
       weight.push_back(values[1].trimmed());
     }
   }
-  
+
   while (m_Ui.tableWidget_Processes->rowCount()) {
     m_Ui.tableWidget_Processes->removeRow(0);
   }
-  
+
   for(int i = 0; i < host.size(); i++) {
     int row = m_Ui.tableWidget_Processes->rowCount();
     m_Ui.tableWidget_Processes->insertRow(row);

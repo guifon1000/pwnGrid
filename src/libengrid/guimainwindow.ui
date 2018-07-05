@@ -82,6 +82,10 @@
      </property>
      <addaction name="actionImportGmsh1Ascii"/>
      <addaction name="actionImportGmsh2Ascii"/>
+
+     <addaction name="actionImportGmsh2AsciiWithBND"/>
+
+
      <addaction name="actionGmsh2Binary"/>
     </widget>
     <widget class="QMenu" name="menuVTK">
@@ -944,6 +948,14 @@
    </property>
    <property name="text">
     <string>v2.0 (ASCII)</string>
+   </property>
+  </action>
+  <action name="actionImportGmsh2AsciiWithBND">
+   <property name="enabled">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>v2.0 with BND faces</string>
    </property>
   </action>
   <action name="actionGmsh2Binary">

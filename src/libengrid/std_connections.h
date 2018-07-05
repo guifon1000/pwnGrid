@@ -24,6 +24,7 @@
 connect(ui.actionImportSTL,              SIGNAL(triggered()),       this, SLOT(importSTL()));
 connect(ui.actionImportGmsh1Ascii,       SIGNAL(triggered()),       this, SLOT(importGmsh1Ascii()));
 connect(ui.actionImportGmsh2Ascii,       SIGNAL(triggered()),       this, SLOT(importGmsh2Ascii()));
+connect(ui.actionImportGmsh2AsciiWithBND,       SIGNAL(triggered()),       this, SLOT(importGmsh2AsciiWithBND())); // Guillaume
 connect(ui.actionExportGmsh1Ascii,       SIGNAL(triggered()),       this, SLOT(exportGmsh1Ascii()));
 connect(ui.actionExportGmsh2Ascii,       SIGNAL(triggered()),       this, SLOT(exportGmsh2Ascii()));
 connect(ui.actionExportNeutral,          SIGNAL(triggered()),       this, SLOT(exportNeutral()));

@@ -30,6 +30,7 @@
 
 CreateVolumeMesh::CreateVolumeMesh()
 {
+  cout << "CreateVolumeMesh::CreateVolumeMesh()" << endl;
   EG_TYPENAME;
   m_CreateBoundaryLayer = false;
   m_BackgroundGrid = vtkSmartPointer<vtkUnstructuredGrid>::New();
@@ -39,6 +40,7 @@ CreateVolumeMesh::CreateVolumeMesh()
 
 int CreateVolumeMesh::numVolumeCells()
 {
+  cout << "CreateVolumeMesh::numVolumeCells()" << endl;
   int N = 0;
   for (vtkIdType id_cell = 0; id_cell < m_Grid->GetNumberOfCells(); ++id_cell) {
     if (isVolume(id_cell, m_Grid)) {
@@ -50,6 +52,7 @@ int CreateVolumeMesh::numVolumeCells()
 
 void CreateVolumeMesh::createTetMesh(int max_num_passes, bool preserve_surface)
 {
+  cout << "CreateVolumeMesh::createTetMesh(int max_num_passes, bool preserve_surface)" << endl;
   double a = m_MaximalEdgeLength;
   double V = a*a*a/(6*sqrt(2.0));
   int N1 = 0;
@@ -86,7 +89,9 @@ void CreateVolumeMesh::createTetMesh(int max_num_passes, bool preserve_surface)
     if (fabs(double(N2-N1)/N1) < 0.05 || pass > max_num_passes) {
       done = true;
     }
+    //done = true;    // Guillaume Debug
   }
+  cout << "mesh finished" << endl;
 }
 
 void CreateVolumeMesh::setBoundaryLayerOn()

@@ -31,6 +31,7 @@ class GuiEditBoundaryConditions;
 #include "multipagewidgetpage.h"
 #include "volumedefinition.h"
 #include "multipagewidget.h"
+#include "gmshreader.h"
 
 #include "ui_guieditboundaryconditions.h"
 
@@ -68,6 +69,7 @@ public:
   GuiEditBoundaryConditions();
   virtual ~GuiEditBoundaryConditions();
   void setMap(QMap<int, BoundaryCondition> *a_bcmap) { m_BcMap = a_bcmap; }
+  void setBcMap(QMap<int,BoundaryCondition> myBCMap2);
 
 private:
 

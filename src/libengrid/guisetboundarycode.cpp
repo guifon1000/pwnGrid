@@ -63,7 +63,7 @@ void GuiSetBoundaryCode::operate()
   local_qset.setValue("FeatureAngle", m_Ui.doubleSpinBoxFeatureAngle->value());
   local_qset.setValue("BoundaryCode", m_Ui.spinBoxBoundaryCode->value());
   local_qset.setValue("PickMethod", m_ButtonGroup->checkedId());
-  
+
   SetBoundaryCode set_bc;
   set_bc.setGrid(m_Grid);
   set_bc.setAllSurfaceCells();
